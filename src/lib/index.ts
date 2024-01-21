@@ -41,7 +41,7 @@ export const getSuggestionMediaURL = (suggestion: DatabaseSuggestion) => `https:
 
 export const getRandomSuggestions = (list: DatabaseSuggestion[]) => {
     // const full = await suggestions.getFullList()
-    const randomRecords = sample([...list], 12)
+    const randomRecords = sample(list, 12)
 
     return parseSuggestions(randomRecords)
 }
@@ -73,7 +73,7 @@ export const sample = <T>(array: T[], amount: number) => {
     let arrayToSplice = [...array]
     for (let i = 0; i < Math.min(amount, arrayToSplice.length); i++) {
         const index = ~~(Math.random() * arrayToSplice.length)
-        result.push(array[index])
+        result.push(arrayToSplice[index])
         arrayToSplice.splice(index, 1)
     }
     return result

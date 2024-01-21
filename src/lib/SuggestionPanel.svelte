@@ -12,8 +12,10 @@
     const onClick = (e: MouseEvent) => {
         if ($votedOn === false) {
             suggestion.votesWritable.set($votes + 1)
-            suggestion.votedOn.set(true)
+        } else {
+            suggestion.votesWritable.set($votes - 1)
         }
+        suggestion.votedOn.set(!$votedOn)
     }
 
     // no-underline border-black/40 border-4 rounded drop-shadow
