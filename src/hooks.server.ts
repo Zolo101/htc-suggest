@@ -2,6 +2,7 @@ import { type Handle, redirect } from "@sveltejs/kit";
 import { sequence } from "@sveltejs/kit/hooks";
 import Pocketbase from "pocketbase";
 import { type DatabaseSuggestion, type DatabaseUser, redirectURL } from "$lib";
+import { dev } from "$app/environment";
 
 export const authentication: Handle = async ({ event, resolve }) => {
     event.locals.pb = new Pocketbase("https://cdn.zelo.dev");
@@ -22,7 +23,8 @@ export const authentication: Handle = async ({ event, resolve }) => {
     const response = await resolve(event);
 
     // send back the default 'pb_auth' cookie to the client with the latest store state
-    response.headers.append('set-cookie', event.locals.pb.authStore.exportToCookie());
+    // From https://github.com/pocketbase/pocketbase/discussions/903 this apparently "may not be sufficient against CSRF attacks" although there is literally no other way to do this
+    response.headers.append('set-cookie', event.locals.pb.authStore.exportToCookie({sameSite: "Lax", secure: !dev}));
 
     return response;
 }
@@ -34,7 +36,7 @@ export const authorization: Handle = async ({ event, resolve }) => {
 
     // Don't do this to the callback route to avoid infinite auth loops
     if (!loggedIn && event.url.pathname !== "/callback" && event.url.pathname !== "/fail") {
-        console.log("Creating provider!!")
+        // console.log("Creating provider!!")
         const provider = (await event.locals.pb.collection("htc_users").listAuthMethods()).authProviders.find(p => p.name === "discord");
         event.cookies.set("provider", JSON.stringify(provider), { httpOnly: true, path: "/callback" });
 
