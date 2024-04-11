@@ -1,7 +1,5 @@
-import { suggestions } from "$lib/pocketbase";
-
-export const load = async () => {
-    const full = await suggestions.getFullList();
+export const load = async ({locals}) => {
+    const full = await locals.suggestions.getFullList();
 
     return {full}
 }

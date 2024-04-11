@@ -4,15 +4,31 @@
 
 html {
     font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
-    @apply h-full;
+    @apply bg-[#1A4D58] text-[#E6FFE8];
 }
 
 body {
     @apply m-0 h-full;
 }
 
+hr {
+    @apply my-2 border-white/10;
+}
+
+h1 {
+    @apply text-4xl font-black;
+}
+
+label, h2 {
+    @apply text-2xl font-bold;
+}
+
 button, .button {
-    @apply font-bold text-black/70 bg-black/10 border-black/20 border-2 rounded px-2 py-1;
+    @apply font-bold text-black/70 bg-black/10 ring-4 ring-inset ring-black/20 rounded px-2 py-1 transition-all;
+}
+
+button:hover {
+    @apply ring-black/80;
 }
 
 li {
@@ -20,11 +36,7 @@ li {
 }
 
 a {
-    @apply font-bold text-green-500 hover:text-green-700 underline transition-colors;
-}
-
-p, span, label, ul {
-    @apply text-[#E6FFE8];
+    @apply text-green-500 hover:text-green-300 underline transition-colors;
 }
 
 /* experimental view transition stuff */

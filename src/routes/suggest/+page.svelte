@@ -1,11 +1,14 @@
 <script lang="ts">
-    import { buildSuggestion, type DatabaseSuggestion } from "$lib";
+    import { type DatabaseSuggestion } from "$lib";
     import Dropzone from "svelte-file-dropzone";
+    import { enhance } from "$app/forms";
     import Preview from "$lib/Preview.svelte";
-    import { fly } from "svelte/transition";
+    import { fly, slide } from "svelte/transition";
+    import { writable, type Writable } from "svelte/store";
 
     let name: string;
-    let media: File | null = null;
+    let media: Writable<File | null> = writable(null);
+    let mediaElement: HTMLInputElement;
     let type: DatabaseSuggestion["type"] | "" = "";
     $: typeAccept = {
         emoji: "image/jpeg,image/png,image/webp,",
@@ -14,25 +17,24 @@
         soundboard: "audio/mpeg,audio/ogg,audio/wav,audio/webm"
     }
 
-    const onSubmit = (e: SubmitEvent) => {
-        // check 5beam-next on how to create multipart form data
-        // buildSuggestion({name, media, type})
-    }
-
     const handleDrop = (e: CustomEvent<{acceptedFiles: File[]}>) => {
         console.log(e)
-        media = e.detail.acceptedFiles[0];
+        $media = e.detail.acceptedFiles[0];
+
+        let dt = new DataTransfer()
+        dt.items.add($media)
+        mediaElement.files = dt.files
     }
 </script>
 
-<form on:submit|preventDefault={onSubmit} class="mt-5">
+<form method="post" class="mt-5" enctype="multipart/form-data" use:enhance>
     <label for="name">Name of suggestion</label>
     <br>
-    <input id="name" bind:value={name} maxlength="64"/>
+    <input name="name" bind:value={name} maxlength="64"/>
     <br>
     <label for="type">Type of suggestion</label>
     <br>
-    <select id="type" bind:value={type}>
+    <select name="type" bind:value={type}>
         <option value="">-- Select --</option>
         <option value="emoji">Emoji</option>
         <option value="animated">Animated Emoji</option>
@@ -44,7 +46,7 @@
         <div class="flex" transition:fly={{y: 10}}>
             <div class="w-1/2 pr-5">
                 <label for="media">Upload</label>
-                <input id="media" type="file" bind:value={media} hidden/>
+                <input id="media" name="media" type="file" bind:this={mediaElement} hidden/>
                 <br><br>
                 <Dropzone
                         accept={typeAccept[type]}
@@ -57,46 +59,52 @@
 
                         on:drop={handleDrop}
                 >
-                    <p class="font-bold text-2xl">Drag and drop your file here!</p>
-                    <p class="font-bold text-2xl">Or click here to select a file!</p>
+                    <p class="font-bold text-lg">Drag and drop your file here!</p>
+                    <p class="font-bold text-lg">Or click here to select a file!</p>
                 </Dropzone>
             </div>
             <div class="w-1/2">
                 <p class="font-bold text-2xl">Requirements</p>
-                <ul>
-                    <!--        <li>Your suggestion must have a name</li>-->
-                    <li>The suggestion must be made by you!</li>
-                    <li>Must have a transparent background if applicable</li>
-                    <li>Must not have the <a href="../youtube_fade.png">youtube fade gradient</a></li>
+                <ul transition:fly={{y: 10}}>
+                    <li>The file must be below 1MB.</li>
+                    {#if type !== "soundboard"}
+                        <li transition:slide>The suggestion must be made by you!</li>
+                        <li transition:slide>Must have a transparent background if applicable</li>
+                        <li transition:slide>Must not have the <a href="../youtube_fade.png">youtube fade gradient</a></li>
+                    {:else}
+                        <li transition:slide>The audio must be less than 5 seconds long.</li>
+                    {/if}
                     {#if type === "emoji" || type === "animated"}
-                        <li>Must be from a image/scene in BFDI/TPOT episodes.</li>
+                        <li transition:slide> Must be from a image/scene in BFDI/TPOT episodes.</li>
                     {/if}
                     {#if type === "sticker" || type === "soundboard"}
-                        <li>Must be relevant to a HTwins project.</li>
+                        <li transition:slide>Must be relevant to a HTwins project.</li>
                     {/if}
                     <!--        <li>If your emote doesn't meet these requirements, a moderator will give a ❌ reaction.</li>-->
                     <!--        <li>If your suggestion gets added there'll be a ✅ reaction!</li>-->
                 </ul>
                 <br>
-                <p class="font-bold">Not a requirement, but try and get your emoji near the 1:1 aspect ratio for best results!</p>
+
+                {#if type === "emoji" || type === "animated"}
+                    <p class="font-bold" transition:slide>Not a requirement, but try and get your emoji near the 1:1 aspect ratio for best results!</p>
+                {/if}
             </div>
         </div>
-        {#if media !== null}
+        {#if $media !== null}
             <div transition:fly={{y: 10}}>
                 <p class="font-bold text-2xl">Preview</p>
                 <Preview {type} {media}/>
                 <br>
-                <button type="submit" class="bg-green-300">Submit Suggestion</button>
+<!--                <input name="spoiler" type="checkbox" bind:value={name} maxlength="64"/>-->
+<!--                <label class="!text-sm !font-normal" for="spoiler">Is your suggestion a spoiler?</label>-->
+<!--                <br>-->
+                <button type="submit" class="bg-green-300 p-3 mb-4">Submit Suggestion</button>
             </div>
         {/if}
     {/if}
 </form>
 
 <style>
-    label {
-        @apply text-2xl font-bold;
-    }
-
     input, select {
         @apply text-2xl text-[#e6ffe8] bg-black/30 border-2 border-white/50 rounded-md p-2;
     }

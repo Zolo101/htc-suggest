@@ -16,9 +16,11 @@
     })
 </script>
 
-<main class="h-full bg-[#1A4D58]">
-    <div class="max-w-[1440px] h-full grow m-auto bg-black/10 px-10 pt-5">
+<div class="max-w-[1440px] h-full bg-black/10 m-auto px-10 pt-5">
+    <header class="mb-2">
         <a class="text-[#10C985] font-bold text-6xl no-underline" href="/">suggest.htwinscentr.al</a>
+    </header>
+    <main>
         <slot/>
-    </div>
-</main>
+    </main>
+</div>

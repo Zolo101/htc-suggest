@@ -1,21 +1,32 @@
 <script lang="ts">
-    import { getSuggestionMediaURL, type DatabaseSuggestion, type Suggestion } from "$lib/index";
+    import { type DatabaseUser, getSuggestionMediaURL, type Suggestion } from "$lib/index";
     import VoteCounter from "$lib/VoteCounter.svelte";
     import { derived } from "svelte/store";
     import { fade } from "svelte/transition";
 
+    export let user: DatabaseUser;
     export let suggestion: Suggestion;
+
+    // Check if the user has already voted on this suggestion
+    suggestion.votedOn.set(user.votes.includes(suggestion.id));
+
     const mediaURL = getSuggestionMediaURL(suggestion);
     const votes = derived(suggestion.votesWritable, (v) => v);
     const votedOn = derived(suggestion.votedOn, (v) => v);
 
-    const onClick = (e: MouseEvent) => {
-        if ($votedOn === false) {
-            suggestion.votesWritable.set($votes + 1)
-        } else {
-            suggestion.votesWritable.set($votes - 1)
-        }
-        suggestion.votedOn.set(!$votedOn)
+    const onClick = async (e: MouseEvent) => {
+        const operateVote = fetch(`/vote?id=${suggestion.id}`, { method: "POST" })
+            .then(() => {
+                if ($votedOn === false) {
+                    suggestion.votesWritable.set($votes + 1)
+                } else {
+                    suggestion.votesWritable.set($votes - 1)
+                }
+                suggestion.votedOn.set(!$votedOn)
+            })
+            .catch(() => {
+                alert(`There has been an error voting for ${suggestion.name}! Please try again later.`);
+            })
     }
 
     // no-underline border-black/40 border-4 rounded drop-shadow
@@ -23,13 +34,13 @@
     // transition-all
 </script>
 
-<a class="
+<button class="
     no-underline drop-shadow
     hover:scale-[1.05] hover:drop-shadow-xl
-    transition-transform
-" href="/#" on:click={onClick}>
+    transition-transform text-white ring-0
+" on:click|preventDefault={onClick}>
     {#if suggestion.type === "emoji" || suggestion.type === "animated"}
-        <div class="w-[154px] h-[168px] bg-lime-50/10 rounded-t rounded-bl p-2 transition-colors" class:votedOn={$votedOn}>
+        <div class="w-[140px] h-[168px] bg-lime-50/10 rounded-t rounded-bl p-2 transition-colors" class:votedOn={$votedOn}>
         <!--    <span>{suggestion.status}</span>-->
             <img class="w-[128px] h-[128px] m-auto" width="128" height="128" src={mediaURL} alt={suggestion.name}/>
             <div class="flex justify-center gap-0.5 text-xl text-center font-bold">
@@ -43,7 +54,7 @@
 <!--            </div>-->
         </div>
     {:else if suggestion.type === "sticker"}
-        <div class="w-[154px] h-[168px] bg-lime-50/10 rounded-t rounded-bl p-2 transition-colors" class:votedOn={$votedOn}>
+        <div class="w-[140px] h-[168px] bg-lime-50/10 rounded-t rounded-bl p-2 transition-colors" class:votedOn={$votedOn}>
             <!--    <span>{suggestion.status}</span>-->
             <img class="m-auto" src={mediaURL} alt={suggestion.name}/>
             <p class="text-xl text-center font-bold">{suggestion.name}</p>
@@ -53,22 +64,22 @@
 <!--            </div>-->
         </div>
     {:else if suggestion.type === "soundboard"}
-        <div class="w-[154px] rounded-t rounded-bl p-2">
+        <div class="w-[140px] rounded-t rounded-bl p-2">
             <!--    <span>{suggestion.status}</span>-->
             <audio controls src={mediaURL} class="w-full"></audio>
             <p class="text-xl text-center font-bold">{suggestion.name}</p>
         </div>
     {/if}
-    <div class="w-[154px] flex items-center justify-between">
+    <div class="w-[140px] flex items-center justify-between">
         <div class="flex flex-col font-bold text-xs pl-1">
-            <span class="text-opacity-50">{suggestion.type}</span>
+            <span class="text-white text-opacity-50">{suggestion.type}</span>
             {#if $votedOn}
                 <span transition:fade={{duration: 100}} class="text-orange-500">voted!</span>
             {/if}
         </div>
         <VoteCounter votes={suggestion.votesWritable}/>
     </div>
-</a>
+</button>
 
 <style>
     img {

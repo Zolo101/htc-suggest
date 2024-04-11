@@ -1,4 +1,3 @@
-import { suggestions } from "$lib/pocketbase";
 import { type Writable, writable } from "svelte/store";
 import { dev } from "$app/environment";
 
@@ -14,13 +13,13 @@ export interface DatabaseUser extends PocketbaseRecord {
     readonly username: string
     readonly discordId: string
     // readonly avatar: string // TODO: Maybe
-    readonly suggestions: DatabaseSuggestion[]
-    readonly votes: DatabaseSuggestion[]
+    readonly suggestions: string[] // DatabaseSuggestion
+    readonly votes: string[] // DatabaseSuggestion
 }
 
 export interface DatabaseSuggestion extends PocketbaseRecord {
     readonly name: string
-    readonly suggester: DatabaseUser
+    readonly suggester: string // DatabaseUser
     readonly media: string
     readonly type: "emoji" | "animated" | "sticker" | "soundboard"
     readonly status: "added" | "accepted" | "denied"
@@ -33,50 +32,49 @@ export interface Suggestion extends DatabaseSuggestion {
     readonly votedOn: Writable<boolean>
 }
 
-export type SuggestionForm = Pick<DatabaseSuggestion, "name" | "media" | "type">
+export const suggestionVotesDatabase = new Map<string, Writable<number>>();
+export const suggestionVotedOnDatabase = new Map<string, Writable<boolean>>();
 
 export const getSuggestionMediaURL = (suggestion: DatabaseSuggestion) => `https://cdn.zelo.dev/api/files/${suggestion.collectionId}/${suggestion.id}/${suggestion.media}`
 
-// const full = await suggestions.getFullList()
-
 export const getRandomSuggestions = (list: DatabaseSuggestion[]) => {
-    // const full = await suggestions.getFullList()
     const randomRecords = sample(list, 12)
-
     return parseSuggestions(randomRecords)
 }
 
 export const getRecentSuggestions = (list: DatabaseSuggestion[]) => {
-    // const full = await suggestions.getFullList()
-
     return parseSuggestions(list)
 }
 
-const parseSuggestions = (suggestionList: DatabaseSuggestion[]) => {
+export const parseSuggestions = (suggestionList: DatabaseSuggestion[]) => {
     const newList: Suggestion[] = []
     for (const suggestion of suggestionList) {
+        let votesWritable = suggestionVotesDatabase.get(suggestion.id)
+        if (!votesWritable) {
+            votesWritable = writable(suggestion.votes)
+            suggestionVotesDatabase.set(suggestion.id, votesWritable)
+        }
+
+        let votedOn = suggestionVotedOnDatabase.get(suggestion.id)
+        if (!votedOn) {
+            votedOn = writable(false)
+            suggestionVotedOnDatabase.set(suggestion.id, votedOn)
+        }
+
         newList.push({
             ...suggestion,
             mediaURL: getSuggestionMediaURL(suggestion),
-            votesWritable: writable(suggestion.votes),
-            votedOn: writable(false),
+            votesWritable,
+            votedOn,
         })
     }
 
     return newList;
 }
 
-export const buildSuggestion = (form: SuggestionForm) => suggestions.create(form)
-
 export const sample = <T>(array: T[], amount: number) => {
-    let result = []
-    let arrayToSplice = [...array]
-    for (let i = 0; i < Math.min(amount, arrayToSplice.length); i++) {
-        const index = ~~(Math.random() * arrayToSplice.length)
-        result.push(arrayToSplice[index])
-        arrayToSplice.splice(index, 1)
-    }
-    return result
+    const shuffled = array.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, amount);
 }
 
 export const siteURL = dev ? "http://localhost:5173" : "https://htc-suggestion-prototype.netlify.app"

@@ -1,16 +1,19 @@
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
-import type { User } from "$lib/DiscordOauth2";
-import type { DatabaseSuggestion } from "$lib";
+import type { DatabaseSuggestion, DatabaseUser } from "$lib";
+import Pocketbase, { RecordService } from "pocketbase";
 
 declare global {
 	namespace App {
 		// interface Error {}
 		interface Locals {
-			user: User
+			user: DatabaseUser
+			pb: Pocketbase
+			suggestions: RecordService<DatabaseSuggestion>
+			users: RecordService<DatabaseUser>
 		}
 		interface PageData {
-			user: User
+			user: DatabaseUser
 			full: DatabaseSuggestion[]
 		}
 		// interface PageState {}
